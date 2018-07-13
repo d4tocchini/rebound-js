@@ -17,6 +17,8 @@ import PhysicsState from './PhysicsState';
 import {removeFirst} from './util';
 import SymbolObservable from 'symbol-observable';
 
+const ONE_BY_6: number = 1.0 / 6.0;
+
 /**
  * Provides a model of a classical spring acting to
  * resolve a body to equilibrium. Springs have configurable
@@ -36,6 +38,7 @@ class Spring {
   static _ID: number = 0;
   static MAX_DELTA_TIME_SEC: number = 0.064;
   static SOLVER_TIMESTEP_SEC: number = 0.001;
+  static SOLVER_TIMESTEP_SEC_BY_2: number = 0.001 * 0.5;
 
   listeners: Array<SpringListener> = [];
   _startValue: number = 0;
@@ -177,20 +180,22 @@ class Spring {
    * immediately.
    * @public
    */
+  /* eslint-disable */
   setEndValue(endValue: number): this {
     if (this._endValue === endValue && this.isAtRest()) {
       return this;
     }
     this._startValue = this.getCurrentValue();
     this._endValue = endValue;
-    this._springSystem.activateSpring(this.getId());
-    for (let i = 0, len = this.listeners.length; i < len; i++) {
+    this._springSystem.activateSpring(this.getId()); // NOTE: let declareds with inline arithmetic (+=) deopts V8
+    for (let i = 0, len = this.listeners.length; i < len; i = i + 1) {
       const listener = this.listeners[i];
       const onChange = listener.onSpringEndStateChange;
       onChange && onChange(this);
     }
     return this;
   }
+  /* eslint-enable */
 
   /**
    * Retrieve the endValue or resting position of this spring.
@@ -291,13 +296,16 @@ class Spring {
    * @public
    */
   isOvershooting(): boolean {
+    if (this._springConfig.tension >> 31) {
+      return false;
+    }
     const start = this._startValue;
     const end = this._endValue;
-    return (
-      this._springConfig.tension > 0 &&
-      ((start < end && this.getCurrentValue() > end) ||
-        (start > end && this.getCurrentValue() < end))
-    );
+    if (start === end) {
+      return false;
+    }
+    const current = this.getCurrentValue();
+    return current !== end && start < end === current > end;
   }
 
   /**
@@ -308,6 +316,7 @@ class Spring {
    * displacement of the Spring.
    * @public
    */
+  /* eslint-disable */
   advance(time: number, realDeltaTime: number): void {
     let isAtRest = this.isAtRest();
 
@@ -324,6 +333,7 @@ class Spring {
 
     const tension = this._springConfig.tension;
     const friction = this._springConfig.friction;
+    const {SOLVER_TIMESTEP_SEC, SOLVER_TIMESTEP_SEC_BY_2} = Spring;
     let position = this._currentState.position;
     let velocity = this._currentState.velocity;
     let tempPosition = this._tempState.position;
@@ -339,10 +349,10 @@ class Spring {
     let dxdt;
     let dvdt;
 
-    while (this._timeAccumulator >= Spring.SOLVER_TIMESTEP_SEC) {
-      this._timeAccumulator -= Spring.SOLVER_TIMESTEP_SEC;
+    while (this._timeAccumulator >= SOLVER_TIMESTEP_SEC) {
+      this._timeAccumulator -= SOLVER_TIMESTEP_SEC;
 
-      if (this._timeAccumulator < Spring.SOLVER_TIMESTEP_SEC) {
+      if (this._timeAccumulator < SOLVER_TIMESTEP_SEC) {
         this._previousState.position = position;
         this._previousState.velocity = velocity;
       }
@@ -351,35 +361,32 @@ class Spring {
       aAcceleration =
         tension * (this._endValue - tempPosition) - friction * velocity;
 
-      tempPosition = position + aVelocity * Spring.SOLVER_TIMESTEP_SEC * 0.5;
-      tempVelocity =
-        velocity + aAcceleration * Spring.SOLVER_TIMESTEP_SEC * 0.5;
+      tempPosition = position + aVelocity * SOLVER_TIMESTEP_SEC_BY_2;
+      tempVelocity = velocity + aAcceleration * SOLVER_TIMESTEP_SEC_BY_2;
       bVelocity = tempVelocity;
       bAcceleration =
         tension * (this._endValue - tempPosition) - friction * tempVelocity;
 
-      tempPosition = position + bVelocity * Spring.SOLVER_TIMESTEP_SEC * 0.5;
-      tempVelocity =
-        velocity + bAcceleration * Spring.SOLVER_TIMESTEP_SEC * 0.5;
+      tempPosition = position + bVelocity * SOLVER_TIMESTEP_SEC_BY_2;
+      tempVelocity = velocity + bAcceleration * SOLVER_TIMESTEP_SEC_BY_2;
       cVelocity = tempVelocity;
       cAcceleration =
         tension * (this._endValue - tempPosition) - friction * tempVelocity;
 
-      tempPosition = position + cVelocity * Spring.SOLVER_TIMESTEP_SEC;
-      tempVelocity = velocity + cAcceleration * Spring.SOLVER_TIMESTEP_SEC;
+      tempPosition = position + cVelocity * SOLVER_TIMESTEP_SEC;
+      tempVelocity = velocity + cAcceleration * SOLVER_TIMESTEP_SEC;
       dVelocity = tempVelocity;
       dAcceleration =
         tension * (this._endValue - tempPosition) - friction * tempVelocity;
 
-      dxdt =
-        1.0 / 6.0 * (aVelocity + 2.0 * (bVelocity + cVelocity) + dVelocity);
+      dxdt = ONE_BY_6 * (aVelocity + 2.0 * (bVelocity + cVelocity) + dVelocity);
       dvdt =
-        1.0 /
-        6.0 *
-        (aAcceleration + 2.0 * (bAcceleration + cAcceleration) + dAcceleration);
+        ONE_BY_6 *
+        (aAcceleration + 2.0 * (bAcceleration + cAcceleration) + dAcceleration); // NOTE: let declareds with inline arithmetic (+=) deopts V8
 
-      position += dxdt * Spring.SOLVER_TIMESTEP_SEC;
-      velocity += dvdt * Spring.SOLVER_TIMESTEP_SEC;
+      position = position + dxdt * SOLVER_TIMESTEP_SEC;
+      velocity = velocity + dvdt * SOLVER_TIMESTEP_SEC;
+
     }
 
     this._tempState.position = tempPosition;
@@ -421,9 +428,11 @@ class Spring {
 
     this.notifyPositionUpdated(notifyActivate, notifyAtRest);
   }
+  /* eslint-enable */
 
+  /* eslint-disable */// NOTE: let declareds with inline arithmetic (+=) deopts V8
   notifyPositionUpdated(notifyActivate: boolean, notifyAtRest: boolean): void {
-    for (let i = 0, len = this.listeners.length; i < len; i++) {
+    for (let i = 0, len = this.listeners.length; i < len; i = i + 1) {
       const listener = this.listeners[i];
       if (notifyActivate && listener.onSpringActivate) {
         listener.onSpringActivate(this);
@@ -438,6 +447,7 @@ class Spring {
       }
     }
   }
+  /* eslint-enable */
 
   /**
    * Check if the SpringSystem should advance. Springs are advanced

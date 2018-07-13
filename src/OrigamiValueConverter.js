@@ -16,17 +16,17 @@
 // SpringConfig.fromOrigamiTensionAndFriction(v, v);
 
 export function tensionFromOrigamiValue(oValue: number): number {
-  return (oValue - 30.0) * 3.62 + 194.0;
+  return oValue * 3.62 + 85.39999999999999;
 }
 
 export function origamiValueFromTension(tension: number): number {
-  return (tension - 194.0) / 3.62 + 30.0;
+  return tension / 3.62 - 23.591160220994475;
 }
 
 export function frictionFromOrigamiValue(oValue: number): number {
-  return (oValue - 8.0) * 3.0 + 25.0;
+  return oValue * 3.0 + 1.0;
 }
 
 export function origamiFromFriction(friction: number): number {
-  return (friction - 25.0) / 3.0 + 8.0;
+  return friction / 3.0 - 0.333333333333334;
 }

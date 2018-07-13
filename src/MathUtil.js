@@ -54,15 +54,12 @@ export function interpolateColor(
 ): string {
   const startColor = util.hexToRGB(startColorStr);
   const endColor = util.hexToRGB(endColorStr);
-  const r = Math.floor(
-    mapValueInRange(val, fromLow, fromHigh, startColor.r, endColor.r),
-  );
-  const g = Math.floor(
-    mapValueInRange(val, fromLow, fromHigh, startColor.g, endColor.g),
-  );
-  const b = Math.floor(
-    mapValueInRange(val, fromLow, fromHigh, startColor.b, endColor.b),
-  );
+  const r =
+    mapValueInRange(val, fromLow, fromHigh, startColor.r, endColor.r) | 0;
+  const g =
+    mapValueInRange(val, fromLow, fromHigh, startColor.g, endColor.g) | 0;
+  const b =
+    mapValueInRange(val, fromLow, fromHigh, startColor.b, endColor.b) | 0;
   if (asRGB) {
     return 'rgb(' + r + ',' + g + ',' + b + ')';
   } else {
@@ -70,10 +67,12 @@ export function interpolateColor(
   }
 }
 
+const PI_BY_180 = Math.PI / 180;
+const PI_BY_180_INV = 180 / Math.PI;
 export function degreesToRadians(deg: number): number {
-  return deg * Math.PI / 180;
+  return deg * PI_BY_180;
 }
 
 export function radiansToDegrees(rad: number): number {
-  return rad * 180 / Math.PI;
+  return rad * PI_BY_180_INV;
 }

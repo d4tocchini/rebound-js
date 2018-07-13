@@ -119,9 +119,9 @@ const doit = function() {
     div.innerHTML = 'row ' + (i + 1);
     div.style.opacity = 0;
 
-    const r = Math.floor(rebound.MathUtil.mapValueInRange(i, 0, 9, 203, 255));
-    const g = Math.floor(rebound.MathUtil.mapValueInRange(i, 0, 9, 17, 210));
-    const b = Math.floor(rebound.MathUtil.mapValueInRange(i, 0, 9, 231, 0));
+    const r = rebound.MathUtil.mapValueInRange(i, 0, 9, 203, 255) | 0;
+    const g = rebound.MathUtil.mapValueInRange(i, 0, 9, 17, 210) | 0;
+    const b = rebound.MathUtil.mapValueInRange(i, 0, 9, 231, 0) | 0;
     div.style.backgroundColor = 'rgb(' + r + ',' + g + ',' + b + ')';
 
     container.appendChild(div);
@@ -155,13 +155,14 @@ const doit = function() {
 
   for (let i = 0; i < 117; i++) {
     const div = document.createElement('div');
+    const mapValueInRange = rebound.MathUtil.mapValueInRange;
     div.className = 'dot';
     div.style.opacity = 0;
     secondContainer.appendChild(div);
 
-    const r = Math.floor(rebound.MathUtil.mapValueInRange(i, 0, 117, 17, 0));
-    const g = Math.floor(rebound.MathUtil.mapValueInRange(i, 0, 117, 148, 204));
-    const b = Math.floor(rebound.MathUtil.mapValueInRange(i, 0, 117, 231, 0));
+    const r = mapValueInRange(i, 0, 117, 17, 0) | 0;
+    const g = mapValueInRange(i, 0, 117, 148, 204) | 0;
+    const b = mapValueInRange(i, 0, 117, 231, 0) | 0;
     div.style.backgroundColor = 'rgb(' + r + ',' + g + ',' + b + ')';
 
     cascade.addPlayer(
@@ -173,10 +174,10 @@ const doit = function() {
             clamped = false;
           }
 
-          const y = rebound.MathUtil.mapValueInRange(val, 0, 1, 0, 0);
-          const x = rebound.MathUtil.mapValueInRange(val, 0, 1, 100, 0);
-          const rot = rebound.MathUtil.mapValueInRange(val, 0, 1, 190, 0);
-          const scale = rebound.MathUtil.mapValueInRange(val, 0, 1, 0, 1);
+          const y = mapValueInRange(val, 0, 1, 0, 0);
+          const x = mapValueInRange(val, 0, 1, 100, 0);
+          const rot = mapValueInRange(val, 0, 1, 190, 0);
+          const scale = mapValueInRange(val, 0, 1, 0, 1);
 
           if (
             (end > start && val > end) ||

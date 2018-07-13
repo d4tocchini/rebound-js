@@ -126,9 +126,10 @@ class SpringSystem {
    */
   getAllSprings(): Array<Spring> {
     const vals = [];
+    let len = 0; // NOTE: `let` will deopt
     for (const id in this._springRegistry) {
       if (this._springRegistry.hasOwnProperty(id)) {
-        vals.push(this._springRegistry[id]);
+        vals[len++] = this._springRegistry[id];
       }
     }
     return vals;
@@ -158,23 +159,30 @@ class SpringSystem {
     delete this._springRegistry[spring.getId()];
   }
 
+  /* eslint-disable */
   advance(time: number, deltaTime: number): void {
-    while (this._idleSpringIndices.length > 0) {
-      this._idleSpringIndices.pop();
-    }
-    for (let i = 0, len = this._activeSprings.length; i < len; i++) {
+    var idleSpringCount = 0;
+    this._idleSpringIndices.length = idleSpringCount;
+    time = time / 1000.0;
+    deltaTime = deltaTime / 1000.0;
+
+    for (let i = 0, len = this._activeSprings.length; i < len; i = i + 1) {
       const spring = this._activeSprings[i];
       if (spring.systemShouldAdvance()) {
-        spring.advance(time / 1000.0, deltaTime / 1000.0);
+        spring.advance(time, deltaTime);
       } else {
-        this._idleSpringIndices.push(this._activeSprings.indexOf(spring));
+        this._idleSpringIndices[
+          idleSpringCount++
+        ] = this._activeSprings.indexOf(spring);
       }
     }
-    while (this._idleSpringIndices.length > 0) {
-      const idx = this._idleSpringIndices.pop();
+    while (idleSpringCount) {
+      const idx = this._idleSpringIndices[--idleSpringCount];
+      this._idleSpringIndices.length = idleSpringCount;
       idx >= 0 && this._activeSprings.splice(idx, 1);
     }
   }
+  /* eslint-enable */
 
   /**
    * This is the main solver loop called to move the simulation
@@ -191,7 +199,7 @@ class SpringSystem {
    * integration constraints or adjustments on the Springs in the
    * SpringSystem.
    * @public
-   */
+   *//* eslint-disable */
   loop(currentTimeMillis: number): void {
     let listener;
     if (this._lastTimeMillis === -1) {
@@ -202,8 +210,10 @@ class SpringSystem {
 
     let i = 0;
     const len = this.listeners.length;
-    for (i = 0; i < len; i++) {
+
+    while (i < len) {
       listener = this.listeners[i];
+      i = i + 1;
       listener.onBeforeIntegrate && listener.onBeforeIntegrate(this);
     }
 
@@ -213,8 +223,10 @@ class SpringSystem {
       this._lastTimeMillis = -1;
     }
 
-    for (i = 0; i < len; i++) {
+    i = 0;
+    while (i < len) {
       listener = this.listeners[i];
+      i = i + 1;
       listener.onAfterIntegrate && listener.onAfterIntegrate(this);
     }
 
@@ -222,6 +234,7 @@ class SpringSystem {
       this.looper.run();
     }
   }
+  /* eslint-enable */
 
   /**
    * Used to notify the SpringSystem that a Spring has become displaced.
@@ -229,8 +242,9 @@ class SpringSystem {
    */
   activateSpring(springId: string): void {
     const spring = this._springRegistry[springId];
-    if (this._activeSprings.indexOf(spring) === -1) {
-      this._activeSprings.push(spring);
+    const _activeSprings = this._activeSprings;
+    if (_activeSprings.indexOf(spring) === -1) {
+      _activeSprings[_activeSprings.length] = spring;
     }
     if (this.getIsIdle()) {
       this._isIdle = false;
