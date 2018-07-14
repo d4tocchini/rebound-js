@@ -181,13 +181,14 @@ class Spring {
    * @public
    */
   /* eslint-disable */
+  // NOTE: let declareds with inline arithmetic (+=) deopts V8
   setEndValue(endValue: number): this {
     if (this._endValue === endValue && this.isAtRest()) {
       return this;
     }
     this._startValue = this.getCurrentValue();
     this._endValue = endValue;
-    this._springSystem.activateSpring(this.getId()); // NOTE: let declareds with inline arithmetic (+=) deopts V8
+    this._springSystem.activateSpring(this.getId());
     for (let i = 0, len = this.listeners.length; i < len; i = i + 1) {
       const listener = this.listeners[i];
       const onChange = listener.onSpringEndStateChange;
@@ -317,6 +318,7 @@ class Spring {
    * @public
    */
   /* eslint-disable */
+  // NOTE: let declareds with inline arithmetic (+=) deopts V8
   advance(time: number, realDeltaTime: number): void {
     let isAtRest = this.isAtRest();
 
@@ -382,7 +384,7 @@ class Spring {
       dxdt = ONE_BY_6 * (aVelocity + 2.0 * (bVelocity + cVelocity) + dVelocity);
       dvdt =
         ONE_BY_6 *
-        (aAcceleration + 2.0 * (bAcceleration + cAcceleration) + dAcceleration); // NOTE: let declareds with inline arithmetic (+=) deopts V8
+        (aAcceleration + 2.0 * (bAcceleration + cAcceleration) + dAcceleration);
 
       position = position + dxdt * SOLVER_TIMESTEP_SEC;
       velocity = velocity + dvdt * SOLVER_TIMESTEP_SEC;
